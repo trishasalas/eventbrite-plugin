@@ -18,20 +18,3 @@ require( 'eventbrite-widgets/eventbrite-widgets.php' );
 require( 'suggested-pages-setup/suggested-pages-setup.php' );
 require( 'tlc-transients/tlc-transients.php' );
 require( 'php-calendar/calendar.php' );
-
-
-
-
-
-// make sure eventbrite keyring service exists
-add_action( 'keyring_load_services', 'eb_keyring_service' );
-/**
- * Function to include the Eventbrite keyring service, if it is not already active
- */
-function eb_keyring_service() {
-	if ( !class_exists( 'Keyring_Service_Eventbrite' ) )
-		require_once( dirname( __FILE__ ) . "/plugins/keyring/includes/services/extended/eventbrite.php" );
-}
-
-// make sure keyring is initialized with eventbrite service
-Keyring::init( true );
