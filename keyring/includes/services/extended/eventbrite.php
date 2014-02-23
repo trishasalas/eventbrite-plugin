@@ -8,7 +8,7 @@
  */
 
 class Keyring_Service_Eventbrite extends Keyring_Service_OAuth2 {
-  const NAME  = 'eventbrite';
+	const NAME  = 'eventbrite';
 	const LABEL = 'Eventbrite';
 
 	function __construct() {
