@@ -25,7 +25,7 @@ class Eventbrite_Settings {
 			return;
 
 		// initial settings
-		$theme_option = Voce_Settings_API::GetInstance()->add_page( __( 'Theme Options', 'eventbrite-parent' ), __( 'Theme Options', 'eventbrite-parent' ), 'theme-options', 'edit_theme_options', '' )
+		$theme_option = Voce_Settings_API::GetInstance()->add_page( __( 'Eventbrite', 'eventbrite-parent' ), __( 'Eventbrite', 'eventbrite-parent' ), 'eventbrite', 'edit_theme_options', '' )
 			->add_group( '', self::eventbrite_group_key() )
 			->add_setting( '<h3 id="eb-settings">' . __( 'Eventbrite Authentication', 'eventbrite-parent' ) . '</h3>', 'eventbrite-theme-settings', array(
 				'display_callback' => array( __CLASS__, 'section_cb' )

@@ -142,7 +142,7 @@ class Voce_Settings_Page {
 
 	public function admin_menu() {
 		if ( current_user_can($this->capability ) ) {
-			add_theme_page( $this->title, $this->menu_title, $this->capability, $this->page_key, array( $this, 'display' ) );
+			add_submenu_page( 'tools.php', $this->title, $this->menu_title, $this->capability, $this->page_key, array( $this, 'display' ) );
 		}
 	}
 
