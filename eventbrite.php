@@ -1,10 +1,10 @@
 <?php
 /*
 Plugin Name: Eventbrite Services
-Plugin URI: http://automattic.com/
+Plugin URI: http://vocecommunications.com/
 Description: Provides Eventbrite service, widgets, and features to supporting themes.
-Author: Automattic
-Author URI: http://automattic.com/
+Author: Voce Communications
+Author URI: http://vocecommunications.com/
 Version: 0.1
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
