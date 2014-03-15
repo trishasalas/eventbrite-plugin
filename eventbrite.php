@@ -26,7 +26,7 @@ function eventbrite_load_eventbrite_keyring_service() {
 add_action( 'plugins_loaded', 'eventbrite_load_eventbrite_keyring_service' );
 
 /**
- * Load remaining Eventbrite code after Keyring is initialized.
+ * Load remaining Eventbrite code after Keyring.
  */
 function eventbrite_load_post_keyring() {
 
