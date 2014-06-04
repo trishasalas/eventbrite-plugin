@@ -19,7 +19,7 @@ class Keyring_Service_Eventbrite extends Keyring_Service_OAuth2 {
 
 		$this->set_endpoint( 'authorize',    'https://www.eventbrite.com/oauth/authorize', 'GET' );
 		$this->set_endpoint( 'access_token', 'https://www.eventbrite.com/oauth/token', 'POST' );
-		$this->set_endpoint( 'self',         'https://www.eventbrite.com/json/user_get',   'GET' );
+		$this->set_endpoint( 'self',         'https://www.eventbriteapi.com/v3/users/me',   'GET' );
 
 		// Enable "basic" UI for entering key/secret
 		if ( ! KEYRING__HEADLESS_MODE ) {
@@ -82,21 +82,22 @@ class Keyring_Service_Eventbrite extends Keyring_Service_OAuth2 {
 				array()
 			)
 		);
+
 		$response = $this->request( $this->self_url, array( 'method' => $this->self_method ) );
 		$meta = array();
 		if ( ! Keyring_Util::is_error( $response ) ) {
-			if ( isset( $response->user->email ) )
-				$meta['username'] = $response->user->email;
+			if ( isset( $response->emails[0]->email ) )
+				$meta['username'] = $response->emails[0]->email;
 
-			if ( isset( $response->user->user_id ) )
-				$meta['user_id'] = $response->user->user_id;
+			if ( isset( $response->id ) )
+				$meta['user_id'] = $response->id;
 
 			$name = array();
-			$first_name = isset( $response->user->first_name ) ? $response->user->first_name : false;
+			$first_name = isset( $response->first_name ) ? $response->first_name : false;
 			if ( $first_name )
 				$name[] = $first_name;
 
-			$last_name = isset( $response->user->last_name ) ? $response->user->last_name : false;
+			$last_name = isset( $response->last_name ) ? $response->last_name : false;
 			if ( $last_name )
 				$name[] = $last_name;
 
