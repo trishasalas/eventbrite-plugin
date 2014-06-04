@@ -119,7 +119,7 @@ class Voce_Eventbrite_API {
 	 * @param string $method api method
 	 * @param array $params request parameters
 	 * @return object response object
-	 * @throws Exception exception when service is not avaliable or an error occurs when submitting the request
+	 * @throws Exception exception when service is not available or an error occurs when submitting the request
 	 */
 	public static function make_request( $method, $params ) {
 		$url = self::ENDPOINT . $method;
