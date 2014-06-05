@@ -9,7 +9,7 @@
 if ( !class_exists( 'Voce_Eventbrite_API' ) ) {
 class Voce_Eventbrite_API {
 
-	const ENDPOINT    = 'https://www.eventbrite.com/json/';
+	const ENDPOINT    = 'https://www.eventbriteapi.com/v3/';
 
 	/**
 	 * Sets up the API
