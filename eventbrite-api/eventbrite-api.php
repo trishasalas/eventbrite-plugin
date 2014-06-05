@@ -35,8 +35,8 @@ class Voce_Eventbrite_API {
 
 			// flush common api data
 			$flush_method_caches = array(
-				'user_list_events',
-				'user_list_venues'
+				'users/me/owned_events',
+				'users/me/venues'
 			);
 			foreach ( $flush_method_caches as $flush_method_cache ) {
 				$key = md5( Voce_Eventbrite_API::get_request_unique_string( $flush_method_cache ) );
@@ -140,41 +140,6 @@ class Voce_Eventbrite_API {
 		return $response;
 	}
 
-	protected static function get_repeat_occurrences( $events ) {
-
-		$repeat_events = array();
-
-		foreach ( $events as $event ) {
-
-			if ( 'yes' === $event->event->repeats ) {
-
-				foreach ( $event->event->repeat_schedule as $i => $repeat ) {
-
-					$same_start_date = ( $repeat->start_date === $event->event->start_date );
-					$same_end_date   = ( $repeat->end_date === $event->event->end_date );
-
-					if ( $same_start_date && $same_end_date ) {
-						continue;
-					}
-
-					$repeat_event = $event;
-
-					$repeat_event->event->start_date = $repeat->start_date;
-					$repeat_event->event->end_date   = $repeat->end_date;
-					$repeat_event->event->occurrence = $i;
-
-					$repeat_events[] = $repeat_event;
-
-				}
-
-			}
-
-		}
-
-		return $repeat_events;
-
-	}
-
 	/**
 	 * Creates a string to uniquely identify the provided method and parameters
 	 * @param string $method api method
@@ -195,7 +160,7 @@ class Voce_Eventbrite_API {
 	 * @return boolean
 	 */
 	public static function get_user( $force = false ) {
-		$response = self::get_auth_request( 'user_get', array(), $force );
+		$response = self::get_auth_request( 'users/me/', array(), $force );
 		if ( $response && isset($response->user) ) {
 			$user = $response->user;
 			return $user;
@@ -209,7 +174,7 @@ class Voce_Eventbrite_API {
 	 * @return array array of the user venue objects
 	 */
 	public static function get_user_venues( $force = false ) {
-		$response = self::get_auth_request( 'user_list_venues', array(), $force );
+		$response = self::get_auth_request( 'users/me/venues', array(), $force );
 		if ( $response && isset( $response->venues ) ) {
 			return $response->venues;
 		}
@@ -223,15 +188,12 @@ class Voce_Eventbrite_API {
 	 * count              - int - number of items to return
 	 * per_page           - int - number of items to have on a page
 	 * page               - int - current page number
-	 * orderby            - string - ordering of the results ( default: start_date; possible values - created )
-	 * order	          - string - asc / desc
+	 * order_by            - string - ordering of the results ( default: start_asc; other values: start_desc, created_asc, created_desc )
 	 * include            - array - only return the specified event ids
-	 * include_occurrence - array - only return the specified event ids with the specified occurrence. Ex format - array(array( 'id' => ###, 'occurrence' => ### ))
 	 * exclude            - array - do not return the specifed event ids
-	 * exclude_occurrence - array - do not return the specified event ids with the specified occurrence. Ex format - array(array( 'id' => ###, 'occurrence' => ### ))
 	 * organizer          - string - only return results from the specified organizer id
 	 * venue              - string - only return results from the specified venue id
-	 * display            - string - comma-separated list of additional output fields to display
+	 * search            - string - term to search for in event titles
 	 *
 	 * @param array $params function and api method parameters
 	 * @param boolean $force force a renewal of the cache
@@ -242,28 +204,38 @@ class Voce_Eventbrite_API {
 			'count'               => -1,
 			'per_page'            => 10,
 			'page'                => -1,
-			'orderby'             => '',         // default: start_date; possible values: created
-			'order'               => 'asc',
+			'order_by'             => '',
 			'include'             => array(),    // include events by id
-			'include_occurrences' => array(),    // include events by id and occurrence combination
-			'exclude_occurrences' => array(),
 			'exclude'             => array(),
 			'organizer'           => '',
 			'venue'               => '',
-			'display'             => 'repeat_schedule',
 			'search'              => '',
 		);
 		$params = wp_parse_args( $params , $defaults );
 		extract( $params );
 
-		$request_args = array(
-			'event_statuses' => 'live,started',
-			'display'        => $display,
-		);
+		$request_args = array( 'status'  => 'live' );
 
-		$response = self::get_auth_request( 'user_list_events', $request_args, $force );
+		$response = self::get_auth_request( 'users/me/owned_events', $request_args, $force );
 		if ( $response && isset($response->events) ) {
+
 			$events = $response->events;
+
+			/**
+			 * The v3 API returns a fixed number of 50 objects, but with pagination information.
+			 * Now that we know how many pages of 50 we have, we can append the rest of the
+			 * pages (capping it at four pages to avoid madness).
+			 */
+			$pages = $response->pagination->page_count;
+			if ( $pages >= 2 && $pages <= 4 ) {
+				$i = 2;
+				while ( $i <= $pages ) {
+					$request_args['page'] = $i;
+					$current_page = self::get_auth_request( 'users/me/owned_events', $request_args, $force );
+					$events = array_merge( $events, $current_page->events );
+					$i++;
+				}
+			}
 
 			// include the following ids
 			if ( $include ) {
@@ -283,43 +255,12 @@ class Voce_Eventbrite_API {
 				$events = array_filter( $events, array( new User_Events_Filter($params), 'filter_organizer' ) );
 			}
 
-			// order by when event was created
-			if ( $orderby == 'created' ) {
-
-				usort( $events, array( new User_Events_Filter($params), 'order_events' ) );
-
-			} else {
-
-				$repeats = self::get_repeat_occurrences( $events );
-
-				$events  = array_merge( $events, $repeats );
-
-				unset( $repeats );
-
-				// re-sort events by start date since reoccurrences could effect order
-				usort( $events, array( __CLASS__, 'event_start_date_sort_cb' ) );
-
-				// include the following ids with occurrences
-				if ( $include_occurrences ) {
-					$events = array_filter( $events, array( new User_Events_Filter($params), 'filter_included_occurrences' ) );
-				}
-
-				// exclude the following ids with occurrences
-				if ( $exclude_occurrences ) {
-					$events = array_filter( $events, array( new User_Events_Filter($params), 'filter_excluded_occurrences' ) );
-				}
-
-				// only show events after now since API shows the previous repeat events if there are repeat events in the future
-				$events = array_filter( $events, array( new User_Events_Filter($params), 'filter_events_after_now' ) );
-
-			}
-
 			// allow the event titles to be searched
 			if ( ! empty( $search ) ) {
 				$search  = stripslashes( $search );
 				$matched = array();
 				foreach ( $events as $event ) {
-					if ( isset( $event->event->title ) && false !== strpos( strtolower( $event->event->title ), strtolower( $search ) ) ) {
+					if ( isset( $event->name->text ) && false !== strpos( strtolower( $event->name->text ), strtolower( $search ) ) ) {
 						$matched[] = $event;
 					}
 				}
@@ -348,7 +289,7 @@ class Voce_Eventbrite_API {
 	 * @return boolean
 	 */
 	static function event_start_date_sort_cb( $event_a, $event_b ) {
-		return $event_a->event->start_date > $event_b->event->start_date;
+		return $event_a->start->utc > $event_b->start->utc;
 	}
 
 	/**
@@ -366,8 +307,7 @@ class Voce_Eventbrite_API {
 			'count'    => -1,
 			'per_page' => 10,
 			'page'     => -1,
-			'orderby'  => '',         // default: start_date; possible values: created
-			'order'    => 'asc',
+			'order_by'  => '',
 			'include'  => array(),
 			'exclude'  => array(),
 		);
@@ -398,7 +338,7 @@ class Voce_Eventbrite_API {
 	 * @return array array of organizers
 	 */
 	public static function get_user_organizers( $force = false ) {
-		$response = self::get_auth_request( 'user_list_organizers', array(), $force );
+		$response = self::get_auth_request( 'users/me/organizers', array(), $force );
 		if ( $response && isset( $response->organizers ) ) {
 			return $response->organizers;
 		}
@@ -443,7 +383,6 @@ function eb_api_get_featured_events( $args = array() ) {
 	$events = array();
 	$featured_event_ids = Voce_Eventbrite_API::get_featured_event_ids();
 	if ( !empty($featured_event_ids) ) {
-		$args['include_occurrences'] = $featured_event_ids;
 		$events = Voce_Eventbrite_API::get_user_events( $args );
 		// re-index array
 		$events = array_values( $events );
@@ -462,7 +401,7 @@ function eb_api_get_non_featured_events( $args = array() ) {
 
 	$featured_event_ids = Voce_Eventbrite_API::get_featured_event_ids();
 	if ( !empty($featured_event_ids) ) {
-		$args['exclude_occurrences'] = $featured_event_ids;
+		$args['exclude'] = $featured_event_ids;
 	}
 
 	$events = Voce_Eventbrite_API::get_user_events( $args );
@@ -495,10 +434,9 @@ function eb_print_ticket_widget( $event_id, $height='350px', $width='100%' ) {
  * Get an event object from the given event id and optional occurrence number
  *
  * @param int $event_id
- * @param int $occurrence
  * @return object event
  */
-function eb_get_event_by_id( $event_id, $occurrence = 0 ) {
+function eb_get_event_by_id( $event_id ) {
 
     $args['include'] = array( $event_id );
 
@@ -506,24 +444,11 @@ function eb_get_event_by_id( $event_id, $occurrence = 0 ) {
         return false;
     }
 
-	$event = array_shift( $events );
-
-	if (
-			( $occurrence > 0 ) &&
-			is_array( $event->event->repeat_schedule ) &&
-			isset( $event->event->repeat_schedule[$occurrence] )
-	) {
-
-		$event->event->start_date = $event->event->repeat_schedule[$occurrence]->start_date;
-		$event->event->end_date   = $event->event->repeat_schedule[$occurrence]->end_date;
-
-	}
-
-    return $event;
+	return array_shift( $events );
 }
 
 /**
- * Class to filter events, used as a workaround  tomake array_filter calls with
+ * Class to filter events, used as a workaround to make array_filter calls with
  * additional arguments while avoiding using closures to allow PHP < 5.3 compatibility
  */
 class User_Events_Filter {
@@ -538,27 +463,15 @@ class User_Events_Filter {
 		return in_array( $event->event->id, $this->args['include'] );
 	}
 
-	function filter_included_occurrences( $event ) {
-		$occurrence    = isset( $event->event->occurrence ) ? $event->event->occurrence : 0;
-		$id_occurrence = array( 'id' => (string) $event->event->id, 'occurrence' => (string) $occurrence );
-		return in_array( $id_occurrence, $this->args['include_occurrences'] );
-	}
-
-	function filter_excluded_occurrences( $event ) {
-		$occurrence    = isset( $event->event->occurrence ) ? $event->event->occurrence : 0;
-		$id_occurrence = array( 'id' => (string) $event->event->id, 'occurrence' => (string) $occurrence );
-		return !in_array( $id_occurrence, $this->args['exclude_occurrences'] );
-	}
-
 	function filter_excluded( $event ) {
 		return !in_array( $event->event->id, $this->args['exclude'] );
 	}
 
 	function filter_venue( $event ) {
 		// handles case when no venue is specified for an event ( online events )
-		if ( isset( $event->event->venue ) ) {
-			return $event->event->venue->id == $this->args['venue'];
-		} elseif ( $this->args['venue'] === 'online' && !isset( $event->event->venue ) ) {
+		if ( isset( $event->venue ) ) {
+			return $event->venue->id == $this->args['venue'];
+		} elseif ( $this->args['venue'] === 'online' && !isset( $event->venue ) ) {
 			return true;
 		} else {
 			return false;
@@ -566,8 +479,8 @@ class User_Events_Filter {
 	}
 
 	function filter_organizer( $event ) {
-		if ( isset( $event->event->organizer->id ) ) {
-			return $event->event->organizer->id == $this->args['organizer'];
+		if ( isset( $event->organizer->id ) ) {
+			return $event->organizer->id == $this->args['organizer'];
 		} else {
 			return false;
 		}
@@ -575,23 +488,23 @@ class User_Events_Filter {
 
 	function order_events( $a, $b ) {
 		if ( $this->args['order'] == 'asc' )
-			return ( strtotime( $a->event->created ) > strtotime( $b->event->created ) );
+			return ( strtotime( $a->created ) > strtotime( $b->created ) );
 		else
-			return ( strtotime( $a->event->created ) < strtotime( $b->event->created ) );
+			return ( strtotime( $a->created ) < strtotime( $b->created ) );
 	}
 
 	function filter_venue_ID( $event ) {
 		// handles case when no venue is specified for an event ( online events )
-		if ( isset( $event->event->venue ) )
-			return $event->event->venue->id == $this->args['venue_id'];
-		elseif ( $this->args['venue_id'] === 'online' && !isset( $event->event->venue ) )
+		if ( isset( $event->venue ) )
+			return $event->venue->id == $this->args['venue_id'];
+		elseif ( $this->args['venue_id'] === 'online' && !isset( $event->venue ) )
 			return true;
 		else
 			return false;
 	}
 
 	function filter_events_after_now( $event ) {
-		return current_time( 'timestamp' ) <= strtotime( $event->event->end_date );
+		return current_time( 'timestamp' ) <= strtotime( $event->end->utc );
 	}
 
 }

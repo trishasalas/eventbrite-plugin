@@ -149,13 +149,14 @@ class Eventbrite_Settings {
 			$delete_nonce = wp_create_nonce( 'keyring-delete-' . $auth_service->get_name() . '-' . $auth_service->get_token()->get_uniq_id() );
 
 			$name = '';
-			if ( $auth_service->get_token()->get_meta( 'external_display' ) )
-				$name = $auth_service->get_token()->get_meta( 'external_display' );
+			if ( $auth_service->get_token()->get_meta( 'name' ) ) {
+				$name = $auth_service->get_token()->get_meta( 'name' );
+			}
 
 			if ( ! empty( $name ) )
-				printf( __( 'Authenticated as %1$s', 'eventbrite-parent' ), esc_html( $name ) );
+				printf( __( 'Connected as %1$s | ', 'eventbrite-parent' ), esc_html( $name ) );
 
-			echo ' | <a href="' . esc_url( Keyring_Util::admin_url( false, array( 'action' => 'delete', 'service' => $auth_service->get_name(), 'token' => $auth_service->get_token()->get_uniq_id(), 'kr_nonce' => $kr_nonce, 'nonce' => $delete_nonce ) ) ) . '" title="' . esc_attr( _x( 'Delete', 'keyring', 'eventbrite-parent' ) ) . '" class="delete">'. __( 'Remove', 'eventbrite-parent' ) . '</a>';
+			echo '<a href="' . esc_url( Keyring_Util::admin_url( false, array( 'action' => 'delete', 'service' => $auth_service->get_name(), 'token' => $auth_service->get_token()->get_uniq_id(), 'kr_nonce' => $kr_nonce, 'nonce' => $delete_nonce ) ) ) . '" title="' . esc_attr( _x( 'Delete', 'keyring', 'eventbrite-parent' ) ) . '" class="delete">'. __( 'Remove', 'eventbrite-parent' ) . '</a>';
 		} else {
 			$service = Voce_Eventbrite_API::get_service();
 			$request_kr_nonce = wp_create_nonce( 'keyring-request' );
@@ -213,8 +214,7 @@ class Eventbrite_Settings {
 			<legend class="screen-reader-text"><span><?php _e( 'Organizer', 'eventbrite-parent' ); ?></span></legend>
 			<select name="<?php echo esc_attr( $setting->get_field_name() . '[organizer-id]' ); ?>">
 				<?php self::organizer_selection_item( (object) array( 'name' => _x( 'All Organizers', 'eventbrite settings', 'eventbrite-parent' ), 'id' => 'all' ), $setting, $value ); ?>
-				<?php foreach ( $organizers as $organizer_object ) : ?>
-					<?php $organizer = $organizer_object->organizer; ?>
+				<?php foreach ( $organizers as $organizer ) : ?>
 					<?php self::organizer_selection_item( $organizer, $setting, $value ); ?>
 				<?php endforeach; ?>
 			</select>
@@ -279,8 +279,7 @@ class Eventbrite_Settings {
 			<select name="<?php echo esc_attr( $setting->get_field_name() . '[venue-id]' ); ?>">
 				<?php self::venue_selection_item( (object) array( 'name' => _x( 'All Locations', 'eventbrite setting', 'eventbrite-parent' ), 'id' => 'all' ), $setting, $value ); ?>
 				<?php self::venue_selection_item( (object) array( 'name' => _x( 'Online', 'eventbrite setting', 'eventbrite-parent' ), 'id' => 'online' ), $setting, $value ); ?>
-				<?php foreach ( $venues as $venue_object ) : ?>
-					<?php $venue = $venue_object->venue; ?>
+				<?php foreach ( $venues as $venue ) : ?>
 					<?php self::venue_selection_item( $venue, $setting, $value ); ?>
 				<?php endforeach; ?>
 			</select>
@@ -519,12 +518,13 @@ class Featured_Event_List_Table extends WP_List_Table {
 		$this->_column_headers = array( $columns, $hidden, $sortable);
 
 		$args = array();
+
 		if ( $this->organizer_id ) $args['organizer'] = $this->organizer_id;
 		if ( $this->venue_id ) $args['venue'] = $this->venue_id;
 
 		$venue_events = Voce_Eventbrite_API::get_user_events( $args, true );
 
-		$per_page     = 200;
+		$per_page     = 20;
 		$current_page = $this->get_pagenum();
 		$total_items  = count( $venue_events );
 
@@ -547,9 +547,9 @@ class Featured_Event_List_Table extends WP_List_Table {
 			case 'event_id':
 				return sprintf( '%s-%s', $item->event->id, ( isset( $item->event->occurrence ) ? $item->event->occurrence : 0 ) );
 			case 'event_date':
-				return mysql2date( get_option( 'date_format' ), $item->event->start_date );
+				return mysql2date( get_option( 'date_format' ), $item->start->utc );
 			case 'event_name':
-				return $item->event->title;
+				return $item->name->text;
 			default:
 				return '';
 		}
@@ -561,7 +561,7 @@ class Featured_Event_List_Table extends WP_List_Table {
 	 * @return type
 	 */
 	function column_cb( $item ) {
-		$id         = (string) $item->event->id;
+		$id         = (string) $item->id;
 		$occurrence = isset( $item->event->occurrence ) ? $item->event->occurrence : 0;
 		$key        = sprintf( '%s-%s', $id, $occurrence );
 
