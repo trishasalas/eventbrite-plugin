@@ -289,7 +289,7 @@ class Voce_Eventbrite_API {
 	 * @return boolean
 	 */
 	static function event_start_date_sort_cb( $event_a, $event_b ) {
-		return $event_a->start->utc > $event_b->start->utc;
+		return $event_a->start->local > $event_b->start->local;
 	}
 
 	/**
@@ -504,7 +504,7 @@ class User_Events_Filter {
 	}
 
 	function filter_events_after_now( $event ) {
-		return current_time( 'timestamp' ) <= strtotime( $event->end->utc );
+		return current_time( 'timestamp' ) <= strtotime( $event->end->local );
 	}
 
 }

@@ -547,7 +547,7 @@ class Featured_Event_List_Table extends WP_List_Table {
 			case 'event_id':
 				return sprintf( '%s-%s', $item->event->id, ( isset( $item->event->occurrence ) ? $item->event->occurrence : 0 ) );
 			case 'event_date':
-				return mysql2date( get_option( 'date_format' ), $item->start->utc );
+				return mysql2date( get_option( 'date_format' ), $item->start->local );
 			case 'event_name':
 				return $item->name->text;
 			default:
