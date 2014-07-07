@@ -16,20 +16,11 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 require( 'keyring/keyring.php' );
 
 /**
- * Load the Eventbrite extended Keyring class.
- */
-function eventbrite_load_eventbrite_keyring_service() {
-
-	require( 'eventbrite-keyring/eventbrite.php' );
-
-}
-add_action( 'plugins_loaded', 'eventbrite_load_eventbrite_keyring_service' );
-
-/**
- * Load remaining Eventbrite code after Keyring.
+ * Load the Eventbrite extended Keyring class, and then all remaining Eventbrite code.
  */
 function eventbrite_load_post_keyring() {
 
+	require( 'eventbrite-keyring/eventbrite.php' );
 	require( 'voce-settings-api/voce-settings-api.php' );
 	require( 'eventbrite-api/eventbrite-api.php' );
 	require( 'eventbrite-settings/eventbrite-settings.php' );
