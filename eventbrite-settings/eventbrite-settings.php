@@ -362,9 +362,7 @@ class Eventbrite_Settings {
 		if ( ! $organizer_id )
 			return;
 
-		if ( is_serialized( $selected ) )
-			$selected = unserialize( $selected );
-		elseif ( ! is_array( $selected ) )
+		if ( ! is_array( $selected ) )
 			$selected = array();
 
 		// allows the specification of selecting only a single featured event
@@ -396,8 +394,6 @@ class Eventbrite_Settings {
 
 			// get previously featured events
 			$previous_featured = Voce_Settings_API::GetInstance()->get_setting( 'featured-event-ids', self::eventbrite_group_key(), array() );
-			if ( is_serialized( $previous_featured ) )
-				$previous_featured = unserialize( $previous_featured );
 
 			// separate out not-featured events on the page
 			$not_featured = array_diff( array_keys( $event_ids ), $value );
@@ -411,9 +407,6 @@ class Eventbrite_Settings {
 			// get full featured event objects
 			$value = array_intersect_key( $event_ids, array_flip( $value ) );
 		}
-
-		if ( is_array( $value ) )
-			$value = serialize( $value );
 
 		return $value;
 	}
@@ -569,6 +562,7 @@ class Featured_Event_List_Table extends WP_List_Table {
 			$type = 'radio';
 		else
 			$type = 'checkbox';
+
 		return $output = sprintf( '<input type="%5$s" name="%1$s" id="%2$s" %3$s value="%4$s" />', esc_attr( $this->field_name . '[]' ), esc_attr( $this->field_id . '-' . $key ), checked( in_array( $key, array_keys( $this->selected ) ), true, false ), esc_attr( $key ), $type );
 	}
 
@@ -578,7 +572,7 @@ class Featured_Event_List_Table extends WP_List_Table {
 	 * @return type
 	 */
 	function column_event_id( $item ) {
-		$id         = (string) $item->event->id;
+		$id         = (string) $item->id;
 		$occurrence = isset( $item->event->occurrence ) ? $item->event->occurrence : 0;
 		$key        = sprintf( '%s-%s', $id, $occurrence );
 		$output     = sprintf( '<input type="hidden" name="page-event-ids[%1$s][id]" value="%2$s" /><input type="hidden" name="page-event-ids[%1$s][occurrence]" value="%3$s" />%4$s', esc_attr( $key ), esc_attr( $id ), esc_attr( $occurrence ), esc_html( $key ) );
