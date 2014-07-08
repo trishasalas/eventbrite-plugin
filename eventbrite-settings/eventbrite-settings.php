@@ -538,7 +538,7 @@ class Featured_Event_List_Table extends WP_List_Table {
 	function column_default( $item, $column_name ) {
 		switch ( $column_name ) {
 			case 'event_id':
-				return sprintf( '%s-%s', $item->event->id, ( isset( $item->event->occurrence ) ? $item->event->occurrence : 0 ) );
+				return $item->id . '-0';
 			case 'event_date':
 				return mysql2date( get_option( 'date_format' ), $item->start->local );
 			case 'event_name':
@@ -555,8 +555,7 @@ class Featured_Event_List_Table extends WP_List_Table {
 	 */
 	function column_cb( $item ) {
 		$id         = (string) $item->id;
-		$occurrence = isset( $item->event->occurrence ) ? $item->event->occurrence : 0;
-		$key        = sprintf( '%s-%s', $id, $occurrence );
+		$key        = $item->id . '-0';
 
 		if ( $this->single_event )
 			$type = 'radio';
@@ -573,9 +572,8 @@ class Featured_Event_List_Table extends WP_List_Table {
 	 */
 	function column_event_id( $item ) {
 		$id         = (string) $item->id;
-		$occurrence = isset( $item->event->occurrence ) ? $item->event->occurrence : 0;
-		$key        = sprintf( '%s-%s', $id, $occurrence );
-		$output     = sprintf( '<input type="hidden" name="page-event-ids[%1$s][id]" value="%2$s" /><input type="hidden" name="page-event-ids[%1$s][occurrence]" value="%3$s" />%4$s', esc_attr( $key ), esc_attr( $id ), esc_attr( $occurrence ), esc_html( $key ) );
+		$key        = $item->id . '-0';
+		$output     = sprintf( '<input type="hidden" name="page-event-ids[%1$s][id]" value="%2$s" />', esc_attr( $key ), esc_attr( $id ) );
 		return $output;
 	}
 
