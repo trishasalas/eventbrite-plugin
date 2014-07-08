@@ -350,13 +350,25 @@ class Voce_Eventbrite_API {
 	 * @return array array of event ids
 	 */
     public static function get_featured_event_ids() {
-        return maybe_unserialize(
+        $ids = maybe_unserialize(
             Voce_Settings_API::GetInstance()->get_setting(
                 'featured-event-ids',
                 Eventbrite_Settings::eventbrite_group_key(),
                 array()
             )
         );
+
+        // If we have no featured IDs, return an empty array
+        if ( empty( $ids ) ) {
+			return array();
+        }
+
+        // Return a simple array of IDs
+        foreach ( $ids as $id ) {
+			$output[] = $id[ 'id' ];
+        }
+
+        return $output;
     }
 };
 add_action( 'init', array( 'Voce_Eventbrite_API', 'init' ) );
@@ -381,12 +393,15 @@ function eb_api_get_venue_info() {
  */
 function eb_api_get_featured_events( $args = array() ) {
 	$events = array();
+
 	$featured_event_ids = Voce_Eventbrite_API::get_featured_event_ids();
 	if ( !empty($featured_event_ids) ) {
+		$args[ 'include' ] = $featured_event_ids;
 		$events = Voce_Eventbrite_API::get_user_events( $args );
 		// re-index array
 		$events = array_values( $events );
 	}
+
 	return $events;
 }
 
@@ -460,11 +475,11 @@ class User_Events_Filter {
     }
 
     function filter_included( $event ) {
-		return in_array( $event->event->id, $this->args['include'] );
+		return in_array( $event->id, $this->args['include'] );
 	}
 
 	function filter_excluded( $event ) {
-		return !in_array( $event->event->id, $this->args['exclude'] );
+		return !in_array( $event->id, $this->args['exclude'] );
 	}
 
 	function filter_venue( $event ) {
