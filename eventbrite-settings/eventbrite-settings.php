@@ -130,12 +130,11 @@ class Eventbrite_Settings {
 	* Enqueue scripts for settings
 	*/
 	static function enqueue_setting_scripts() {
-
-		if ( ! isset( $_GET['page'] ) || 'theme-options-page' != $_GET['page'] )
+		if ( ! isset( $_GET['page'] ) || 'eventbrite-page' != $_GET['page'] )
 			return;
 
-		wp_enqueue_script( 'eventbrite-settings', plugins_url( 'js/eventbrite-settings.js' , __FILE__ ), array( 'jquery' ), '20130915' );
-		wp_enqueue_style(  'eventbrite-settings', plugins_url( 'css/eventbrite-settings.css' , __FILE__ ), array(), '20130915' );
+		wp_enqueue_script( 'eventbrite-settings', plugins_url( 'js/eventbrite-settings.js' , __FILE__ ), array( 'jquery' ), '20140408' );
+		wp_enqueue_style(  'eventbrite-settings', plugins_url( 'css/eventbrite-settings.css' , __FILE__ ), array(), '20140408' );
 	}
 
 	/**
