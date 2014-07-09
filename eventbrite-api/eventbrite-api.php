@@ -463,6 +463,15 @@ function eb_get_event_by_id( $event_id ) {
 }
 
 /**
+ * Get the call-to-action button text ("Ticket Purchase Link/Button Text" on the Eventbrite settings page)
+ *
+ * @return string Button text or null
+ */
+function eb_get_call_to_action() {
+	return Voce_Settings_API::GetInstance()->get_setting( 'call-to-action', Eventbrite_Settings::eventbrite_group_key() );
+}
+
+/**
  * Class to filter events, used as a workaround to make array_filter calls with
  * additional arguments while avoiding using closures to allow PHP < 5.3 compatibility
  */
