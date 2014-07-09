@@ -135,7 +135,7 @@ class Voce_Eventbrite_API {
 		$response = $eb->request( $url );
 
 		if ( is_a($response, 'Keyring_Error') || isset($response->error) )
-			throw new Exception( sprintf( __( 'Eventbrite API: %s', 'eventbrite-parent' ), $response->error->error_message ) );
+			throw new Exception( sprintf( __( 'Eventbrite API: %s', 'eventbrite-parent' ), 'An error occurred.' ) );
 
 		return $response;
 	}
