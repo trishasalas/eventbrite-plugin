@@ -53,13 +53,9 @@ class Eventbrite_Register_Ticket_Widget extends WP_Widget {
 			return;
 		}
 
-		if ( ! $featured_event_ids = unserialize( $featured_events_setting ) ) {
-			return;
-		}
-
 		ob_start();
 
-		$featured_event_id = array_shift( $featured_event_ids );
+		$featured_event_id = array_shift( $featured_events_setting );
 		?>
 		<p class="text-center">
 			<a class="btn btn-full" href="<?php echo esc_url( sprintf( 'http://www.eventbrite.com/event/%1$s/?ref=wpcta', $featured_event_id['id'] ) ); ?>" target="_blank"><?php echo esc_html( eb_get_call_to_action() ); ?></a>
