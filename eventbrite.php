@@ -31,3 +31,20 @@ function eventbrite_load_post_keyring() {
 
 }
 add_action( 'plugins_loaded', 'eventbrite_load_post_keyring' );
+
+/**
+ * Inform user where to set up Eventbrite in the admin.
+ *
+ * @uses Voce_Eventbrite_API::get_auth_service()
+ * @uses admin_url()
+ */
+function eventbrite_setup_admin_notice() {
+	if ( class_exists( 'Voce_Eventbrite_API' ) && ! Voce_Eventbrite_API::get_auth_service() ) {
+		printf( '<div class="updated"><p>%s</p></div>',
+			sprintf( __( 'You can set up Eventbrite Services under %s.', 'eventbrite' ),
+				'<a href="' . admin_url( 'tools.php?page=eventbrite-page' ) . '">' . __( 'Tools &rarr; Eventbrite', 'eventbrite' ) . '</a>'
+			)
+		);
+	}
+}
+add_action( 'admin_notices', 'eventbrite_setup_admin_notice' );
